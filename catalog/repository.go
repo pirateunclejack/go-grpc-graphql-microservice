@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 
-	// "github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/update"
@@ -32,7 +32,7 @@ type elasticRepository struct {
 type productDocument struct {
     Name        string  `json:"name"`
     Description string  `json:"description"`
-    Price       float32 `json:"price"`
+    Price       float64 `json:"price"`
 }
 
 func NewElasticRepository(url string) (Repository, error) {
@@ -41,15 +41,14 @@ func NewElasticRepository(url string) (Repository, error) {
     }
     client, err := elasticsearch.NewTypedClient(elasticCfg)
     if err != nil {
+        log.Printf("failed to create elasticsearch client: %v", err)
         return nil, err
     }
 
     return &elasticRepository{client}, nil
 }
 
-func (r *elasticRepository) Close() {
-    
-}
+func (r *elasticRepository) Close() {}
 
 func (r *elasticRepository) PutProduct(ctx context.Context, p Product) error {
     data, err := json.Marshal(productDocument{
@@ -118,7 +117,7 @@ func (r *elasticRepository) ListProducts(
         p := productDocument{}
         if err = json.Unmarshal(*&hit.Source_, &p); err == nil {
             products = append(products, Product{
-                ID: hit.Id_,
+                ID: *hit.Id_,
                 Name: p.Name,
             })
         }
@@ -150,7 +149,7 @@ func (r *elasticRepository) ListProductsWithIDs(
         p := productDocument{}
         if err = json.Unmarshal(*&hit.Source_, &p); err == nil {
             products = append(products, Product{
-                ID: hit.Id_,
+                ID: *hit.Id_,
                 Name: p.Name,
             })
         }
@@ -193,7 +192,7 @@ func (r *elasticRepository) SearchProducts(
         p := productDocument{}
         if err = json.Unmarshal(*&hit.Source_, &p); err == nil {
             products = append(products, Product{
-                ID: hit.Id_,
+                ID: *hit.Id_,
                 Name: p.Name,
             })
         }
