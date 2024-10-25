@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"log"
 
 	"github.com/segmentio/ksuid"
 )
@@ -33,6 +34,7 @@ func (s *accountService) PostAccount(ctx context.Context, name string) (*Account
         ID: ksuid.New().String(),
     }
     if err := s.repository.PutAccount(ctx, a); err!= nil {
+        log.Println("failed to put account from account service: ", err)
         return nil, err
     }
 

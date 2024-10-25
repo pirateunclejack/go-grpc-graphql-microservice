@@ -8,7 +8,6 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/core/update"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 )
 
@@ -45,30 +44,45 @@ func NewElasticRepository(url string) (Repository, error) {
         return nil, err
     }
 
+    exists, err  := client.Indices.Exists("catalog").Do(context.TODO())
+    if err != nil {
+        log.Println("failed to check index exists: ", err)
+        return nil, err
+    }
+    if !exists {
+        res, err := client.Indices.Create(
+            "catalog",
+        ).Do(context.TODO())
+        if err != nil {
+            log.Println("failed to create elasticsearch catalog index: ", err)
+            return nil, err
+        }
+        log.Println("create elasticsearch index catalog success: ", res.Index)
+    }
+
     return &elasticRepository{client}, nil
 }
 
 func (r *elasticRepository) Close() {}
 
 func (r *elasticRepository) PutProduct(ctx context.Context, p Product) error {
-    data, err := json.Marshal(productDocument{
+    product_docuemnt := productDocument{
         Name: p.Name,
         Description: p.Description,
         Price: p.Price,
-    })
+    }
+
+    res, err := r.client.Index("catalog").
+        Id(p.ID).
+        Request(product_docuemnt).
+        Do(ctx)
     if err != nil {
+        log.Println("failed to index product: ", err)
         return err
     }
 
-    _, err = r.client.Update("catalog", p.ID).Request(
-        &update.Request{
-            Doc: data,
-        },
-    ).Do(ctx)
-    if err != nil {
-        return err
-    }
-    ctx.Done()
+    log.Println("index product document success: ", res.Result)
+
     return err
 }
 
@@ -77,16 +91,14 @@ func (r *elasticRepository) GetProductByID(
 ) (*Product, error) {
     res, err := r.client.Get("catalog", id).Do(ctx)
     if err != nil {
+        log.Println("failed to get product by id from catalog repository: ", err)
         return nil, err
     }
 
     p := &productDocument{}
-    p_byte, err := res.Source_.MarshalJSON()
+    err = json.Unmarshal(res.Source_, &p)
     if err != nil {
-        return nil, err
-    }
-    err = json.Unmarshal(p_byte, &p)
-    if err != nil {
+        log.Println("failed to unmarshal productDocument: ", err)
         return nil, err
     }
 
@@ -109,6 +121,7 @@ func (r *elasticRepository) ListProducts(
         Do(context.TODO())
     
     if err != nil {
+        log.Println("failed to list all products from catalog repository: ", err)
         return nil, err
     }
 
@@ -119,6 +132,8 @@ func (r *elasticRepository) ListProducts(
             products = append(products, Product{
                 ID: *hit.Id_,
                 Name: p.Name,
+                Description: p.Description,
+                Price: p.Price,
             })
         }
     }
@@ -141,6 +156,7 @@ func (r *elasticRepository) ListProductsWithIDs(
         }).Do(ctx)
 
     if err != nil {
+        log.Println("failed to list products with ids from catalog repository: ", err)
         return nil, err
     }
 
@@ -151,9 +167,12 @@ func (r *elasticRepository) ListProductsWithIDs(
             products = append(products, Product{
                 ID: *hit.Id_,
                 Name: p.Name,
+                Description: p.Description,
+                Price: p.Price,
             })
         }
     }
+    log.Println("catalog: repository: products: ", products)
 
     return products, err
 }
@@ -163,14 +182,6 @@ func (r *elasticRepository) SearchProducts(
 )([]Product, error) {
     skip_int := int(skip)
     take_int := int(take)
-    // skip_int, err := strconv.Atoi(skip)
-    // if err != nil {
-    //     return nil, err
-    // }
-    // take_int, err := strconv.Atoi(take)
-    // if err != nil {
-    //     return nil, err
-    // }
     res, err := r.client.Search().
         Index("catalog").
         Request(&search.Request{
@@ -184,9 +195,10 @@ func (r *elasticRepository) SearchProducts(
             Size: &take_int,
         }).Do(ctx)
     if err != nil {
+        log.Println("failed to search products with query from catalog repository: ", err)
         return nil, err
     }
-    
+
     products := []Product{}
     for _, hit := range res.Hits.Hits {
         p := productDocument{}
@@ -194,6 +206,8 @@ func (r *elasticRepository) SearchProducts(
             products = append(products, Product{
                 ID: *hit.Id_,
                 Name: p.Name,
+                Description: p.Description,
+                Price: p.Price,
             })
         }
     }

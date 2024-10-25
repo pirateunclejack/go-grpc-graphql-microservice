@@ -18,7 +18,7 @@ func main() {
     var cfg Config
     err := envconfig.Process("", &cfg)
     if err != nil {
-        log.Fatal(err)
+        log.Fatal("failed to get account config with envconfig: ", err)
     }
 
     var r account.Repository
@@ -27,12 +27,12 @@ func main() {
     if err := retry.Constant(ctx, time.Second * 1 , func(ctx context.Context) error {
         r, err = account.NewPostgresRepository((cfg.DatabaseURL))
         if err != nil {
-            log.Println(err)
+            log.Println("failed to create account postgres repository: ", err)
             return retry.RetryableError(err)
         }
         return nil
     }); err != nil {
-        log.Fatal(err)
+        log.Fatal("failed to retry to create account postgres repository: ", err)
     }
 
     defer r.Close()

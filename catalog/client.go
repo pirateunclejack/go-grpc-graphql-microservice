@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"log"
 
 	"github.com/pirateunclejack/go-grpc-graphql-microservice/catalog/pb"
 	"google.golang.org/grpc"
@@ -17,6 +18,7 @@ func NewClient(url string) (*Client, error) {
     opts := grpc.WithTransportCredentials(insecure.NewCredentials())
     conn, err := grpc.NewClient(url, opts)
     if err != nil {
+        log.Println("failed to create catalog grpc client: ", err)
         return nil, err
     }
 
@@ -40,6 +42,7 @@ func (c *Client) PostProduct(
         },
     )
     if err != nil {
+        log.Println("failed to post product from catalog client: ", err)
         return nil, err
     }
 
@@ -59,6 +62,7 @@ func (c *Client) GetProduct(ctx context.Context, id string) (*Product, error) {
         },
     )
     if err != nil {
+        log.Println("failed to get product from catalog client: ", err)
         return nil, err
     }
 
@@ -85,6 +89,7 @@ func (c *Client) GetProducts(
         },
     )
     if err != nil {
+        log.Println("failed to get products from catalog client: ", err)
         return nil, err
     }
 
@@ -97,6 +102,7 @@ func (c *Client) GetProducts(
             Price: p.Price,
         })
     }
+    log.Println("catalog: client: products: ", products)
 
     return &products, err
 }

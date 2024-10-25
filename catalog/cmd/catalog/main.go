@@ -18,7 +18,7 @@ func main() {
     var cfg Config
     err := envconfig.Process("", &cfg)
     if err!= nil {
-        log.Fatal(err)
+        log.Fatal("failed to get catalog config with envconfig: ", err)
     }
 
     var r catalog.Repository
@@ -27,12 +27,12 @@ func main() {
     if err := retry.Constant(ctx, time.Second * 1 , func(ctx context.Context) error {
         r, err = catalog.NewElasticRepository(cfg.DatabaseURL)
         if err != nil {
-            log.Println(err)
+            log.Println("failed to create elasticsearch repository: ", err)
             return retry.RetryableError(err)
         }
         return nil
     }); err != nil {
-        log.Fatal(err)
+        log.Fatal("failed to retry create elasticsearch repository: ", err)
     }
 
     defer r.Close()

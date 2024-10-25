@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -21,11 +22,13 @@ type postgresRepository struct {
 func NewPostgresRepository(url string) (Repository, error) {
     db, err := sql.Open("postgres", url)
     if err != nil {
+        log.Println("failed to create postgres repository from account client: ", err)
         return nil, err
     }
 
     err = db.Ping()
     if err != nil {
+        log.Println("failed to connect to postgres repository from account client: ", err)
         return nil, err
     }
 
@@ -46,6 +49,9 @@ func (r *postgresRepository) PutAccount(ctx context.Context, a Account) error {
         "INSERT INTO accounts(id, name) VALUES($1, $2)",
         a.ID, a.Name,
     )
+    if err != nil {
+        log.Println("failed to put account from account repository: ", err)
+    }
     return err
 }
 
@@ -59,6 +65,7 @@ func (r *postgresRepository) GetAccountByID(
     )
     a := &Account{}
     if err := row.Scan(&a.ID, &a.Name); err != nil {
+        log.Println("failed to get account by id from account repository: ", err)
         return nil, err
     }
     return a, nil
@@ -72,6 +79,7 @@ func (r *postgresRepository) ListAccounts(ctx context.Context, skip uint64, take
         take,
     )
     if err != nil {
+        log.Println("failed to list accounts from account repository: ", err)
         return nil, err
     }
 
@@ -86,6 +94,7 @@ func (r *postgresRepository) ListAccounts(ctx context.Context, skip uint64, take
     }
 
     if err = rows.Err(); err!= nil {
+        log.Println("list accounts iteration failed from account repository: ", err)
         return nil, err
     }
     return accounts, nil

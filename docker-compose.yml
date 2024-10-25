@@ -1,8 +1,92 @@
 services:
   account:
+    build:
+      context: .
+      dockerfile: ./account/app.dockerfile
+    depends_on:
+      - account_db
+    environment:
+      - DATABASE_URL=postgres://postgres:example@account_db:5432/postgres?sslmode=disable
+    restart: on-failure
+
   catalog:
+    build:
+      context: .
+      dockerfile: ./catalog/app.dockerfile
+    depends_on:
+      - catalog_db
+    environment:
+      - DATABASE_URL=http://catalog_db:9200
+    restart: on-failure
+
   order:
+    # image: acim/go-reflex:1.23.2
+    # volumes:
+    # - .:/app
+    build:
+      context: .
+      dockerfile: ./order/app.dockerfile
+    depends_on:
+      - order_db
+    environment:
+      - DATABASE_URL=postgres://postgres:example@order_db:5432/postgres?sslmode=disable
+      - ACCOUNT_SERVICE_URL=account:8080
+      - CATALOG_SERVICE_URL=catalog:8080
+    # entrypoint: /bin/sh GO111MODULE=on go build -mod vendor -o /go/bin/app ./order/cmd/order
+    # entrypoint: reflex -r '\.go' -s -- sh -c 'GO111MODULE=on go build -mod vendor  -buildvcs=false -o /go/bin/app ./order/cmd/order && /go/bin/app'
+    # entrypoint: which go
+    restart: on-failure
+
   graphql:
+    build:
+      context: .
+      dockerfile: ./graphql/app.dockerfile
+    ports:
+      - '8888:8080'
+    depends_on:
+      - account
+      - catalog
+    environment:
+      - ACCOUNT_SERVICE_URL=account:8080
+      - CATALOG_SERVICE_URL=catalog:8080
+      - ORDER_SERVICE_URL=order:8080
+    restart: on-failure
+
   account_db:
+    build:
+      context: ./account
+      dockerfile: ./db.dockerfile
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=example
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
   catalog_db:
+    image: bitnami/elasticsearch:8.15.3
+    environment:
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      discovery.type: single-node
+
+  kibana:
+    image: 'bitnami/kibana:8.15.3'
+    ports:
+      - 5601:5601
+    environment:
+      - KIBANA_ELASTICSEARCH_URL=catalog_db
+
   order_db:
+    build:
+      context: ./order
+      dockerfile: ./db.dockerfile
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=example
+    restart: unless-stopped

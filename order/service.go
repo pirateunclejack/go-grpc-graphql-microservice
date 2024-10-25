@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/segmentio/ksuid"
@@ -57,6 +58,7 @@ func (s *orderService) PostOrder(
 
     err := s.repository.PutOrder(ctx, *o)
     if err != nil {
+        log.Println("failed to put order from order service: ", err)
         return nil, err
     }
 

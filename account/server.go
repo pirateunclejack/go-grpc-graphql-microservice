@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/pirateunclejack/go-grpc-graphql-microservice/account/pb"
@@ -21,6 +22,7 @@ func ListenGRPC(s Service, port int) error {
         fmt.Sprintf(":%d", port),
     )
     if err != nil {
+        log.Println("failed to create grpc server from account server: ", err)
         return err
     }
     serv := grpc.NewServer()
@@ -37,6 +39,7 @@ func (s *grpcServer) PostAccount(
 ) (*pb.PostAccountResponse, error) {
     a, err := s.service.PostAccount(ctx, r.Name)
     if err != nil {
+        log.Println("failed to post account from account server: ", err)
         return nil, err
     }
 
@@ -53,6 +56,7 @@ func (s *grpcServer) GetAccount(
 ) (*pb.GetAccountResponse, error) {
     a, err := s.service.GetAccount(ctx, r.Id)
     if err != nil {
+        log.Println("failed to get account from account server: ", err)
         return nil, err
     }
 
@@ -69,6 +73,7 @@ func (s *grpcServer) GetAccounts(
 ) (*pb.GetAccountsResponse, error) {
     res, err := s.service.GetAccounts(ctx, r.Skip, r.Take)
     if err != nil {
+        log.Println("failed to get accounts from account server: ", err)
         return nil, err
     }
 

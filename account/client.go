@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"log"
 
 	"github.com/pirateunclejack/go-grpc-graphql-microservice/account/pb"
 	"google.golang.org/grpc"
@@ -17,6 +18,7 @@ func NewClient(url string) (*Client, error) {
     opts := grpc.WithTransportCredentials(insecure.NewCredentials())
     conn, err := grpc.NewClient(url, opts)
     if err != nil {
+        log.Println("failed to create account grpc client: ", err)
         return nil, err
     }
 
@@ -34,6 +36,7 @@ func (c *Client) PostAccount(ctx context.Context, name string) (*Account, error)
         &pb.PostAccountRequest{Name: name},
     )
     if err != nil {
+        log.Println("failed to post account from account client: ", err)
         return nil, err
     }
 
@@ -49,6 +52,7 @@ func (c *Client) GetAccount(ctx context.Context, id string) (*Account, error) {
         &pb.GetAccountRequest{Id: id},
     )
     if err != nil {
+        log.Println("failed to get account from account client: ", err)
         return nil, err
     }
     return &Account{
@@ -63,6 +67,7 @@ func (c *Client) GetAccounts(ctx context.Context, skip uint64, take uint64) ([]A
         &pb.GetAccountsRequest{Skip:skip, Take:take},
     )
     if err != nil {
+        log.Println("failed to get accounts from account client: ", err)
         return nil, err
     }
 

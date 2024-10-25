@@ -20,6 +20,7 @@ func ListenGRPC(s Service, port int) error {
     lis, err := net.Listen(
         "tcp", fmt.Sprintf(":%d", port))
     if err != nil {
+        log.Println("failed to create catalog server: ", err)
         return err
     }
 
@@ -39,7 +40,7 @@ func (s *grpcServer) PostProduct(
     p, err := s.service.PostProduct(
         ctx, r.Name, r.Description, r.Price)
     if err != nil {
-        log.Println(err)
+        log.Println("failed to post product from catalog server: ", err)
         return nil, err
     }
 
@@ -58,7 +59,7 @@ func (s *grpcServer) GetProduct(
 ) (*pb.GetProductResponse, error) {
     p, err := s.service.GetProduct(ctx, r.Id)
     if err != nil {
-        log.Println(err)
+        log.Println("failed to get product from catalog server: ", err)
         return nil, err
     }
 
@@ -86,7 +87,7 @@ func (s *grpcServer) GetProducts(
         res, err = s.service.GetProducts(ctx, r.Skip, r.Take)
     }
     if err != nil {
-        log.Println(err)
+        log.Println("failed to get products from catalog server: ", err)
         return nil, err
     }
 
